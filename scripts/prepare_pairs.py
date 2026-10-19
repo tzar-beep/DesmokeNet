@@ -89,6 +89,7 @@ def main():
     ap.add_argument("--max-side", type=int, default=0, help="downscale longest side (0 = keep)")
     ap.add_argument("--val-frac", type=float, default=0.1, help="fraction of train scenes held out")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--block", type=int, default=250, help="frames per pseudo-scene when names are bare numbers")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     src, out = Path(args.src), Path(args.out)
@@ -110,6 +111,12 @@ def main():
 
     rows = [{"smoky_src": s, "gt_src": g, "scene": scene_of(s, src), "split": split_of(s.relative_to(src))}
             for s, g in pairs]
+    if len({r["scene"] for r in rows}) == 1 and all(r["smoky_src"].stem.isdigit() for r in rows):
+        # No scene labels (SmokeBench: 1.jpg, 2.jpg, ...). Frames are numbered in capture order, so
+        # contiguous blocks stand in for scenes and keep near-duplicate frames out of validation.
+        for r in rows:
+            r["scene"] = f"{r['split']}_block{int(r['smoky_src'].stem) // args.block}"
+        print(f"no scene labels found: using contiguous blocks of {args.block} frames as scenes")
     train_scenes = sorted({r["scene"] for r in rows if r["split"] == "train"})
     if not any(r["split"] == "val" for r in rows) and len(train_scenes) > 1:
         rng = random.Random(args.seed)

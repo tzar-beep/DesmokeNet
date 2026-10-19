@@ -3,7 +3,7 @@
 data:
   manifest: C:/data/smokebench/prepared/manifest.csv   # built by scripts/prepare_pairs.py
   crop: 128          # SmokeBench trains on 128x128 patches
-  workers: 4
+  workers: 2
   ref_dropout: 0.2
 model:
   mode: gated
@@ -18,10 +18,10 @@ loss:
   w_gate: 0.05
 train:
   out_dir: runs/smokebench_gated_v3
-  epochs: 30
+  epochs: 12
   batch_size: 16
   lr: 0.0005
   amp: true
-  val_every: 5
+  val_every: 4
   val_max_items: 100
   seed: 0

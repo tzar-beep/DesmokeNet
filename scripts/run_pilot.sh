@@ -14,7 +14,7 @@ fi
 
 M=""
 for v in single gated_v2 gated_v3; do
-  for s in 0 1; do
+  for s in ${SEEDS:-0}; do
     out=runs/pilot_${v}_s$s
     [ -f "$out/best.pt" ] || $PY scripts/train.py --config configs/smokebench_$v.yaml --seed $s --out-dir "$out"
     M="$M $out/best.pt"

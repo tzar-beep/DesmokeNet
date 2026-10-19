@@ -3,7 +3,7 @@
 data:
   manifest: C:/data/smokebench/prepared/manifest.csv   # built by scripts/prepare_pairs.py
   crop: 128          # SmokeBench trains on 128x128 patches
-  workers: 4
+  workers: 2
 model:
   mode: concat
   widths: [32, 64, 128, 192]
@@ -14,10 +14,10 @@ loss:
   w_lpips: 0.1
 train:
   out_dir: runs/smokebench_concat
-  epochs: 30
+  epochs: 12
   batch_size: 16
   lr: 0.0005
   amp: true
-  val_every: 5
+  val_every: 4
   val_max_items: 100
   seed: 0
