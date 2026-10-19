@@ -27,11 +27,16 @@ Synthetic numbers only show that the code works. They are not paper results.
 
 ## Real data (SmokeBench)
 
-1. Download SmokeBench to a folder outside OneDrive (e.g. `D:/data/smokebench`).
-2. Write a `manifest.csv` next to it with columns `smoky,gt,ref,change_mask,scene,split`
-   (paths relative to the manifest). Leave `ref` empty: a stale reference is synthesized
-   from the GT. The exact layout depends on how SmokeBench is packaged.
-3. Run the Phase 0 pilot: `configs/smokebench_{single,concat,gated}.yaml`.
+1. Download `SmokeBench.zip` (1.5 GB, linked from [ncfjd/SmokeBench](https://github.com/ncfjd/SmokeBench))
+   to `C:/data/smokebench/`, outside OneDrive.
+2. Run the whole Phase 0 pilot. It unzips, builds a 640 px manifest with
+   `scripts/prepare_pairs.py`, trains single / v2 / v3 on 2 seeds, then evaluates:
+   ```bash
+   bash scripts/run_pilot.sh
+   ```
+   Check the folder detection first with
+   `python scripts/prepare_pairs.py --src C:/data/smokebench/raw --out x --dry-run`.
+   `ref` is left empty, so a stale reference is synthesized from the GT.
 
 ## Layout
 
