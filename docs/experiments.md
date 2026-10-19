@@ -33,6 +33,34 @@ Gate AUROC: how well (1 − gate) detects changed pixels, given per seed (0.5 = 
 5. Confidence is still weakly correlated with error in reference models (ρ ≈ 0.2 vs 0.42 for
    single). It needs work before H3 can be claimed.
 
-Reproduce: `configs/synthetic_{single,gated,gated_sup,gated_v2}.yaml` with `--seed 0/1`,
+## 2026-10-19 — Reference dropout (v3)
+
+v2 (w_gate 0.05) + `ref_dropout: 0.2`: during training, 20% of samples get a reference from
+another scene with the change mask set everywhere, so the smoky-only path must work alone.
+
+| Variant | PSNR | Thick | Changed | Changed∩thick | Unchanged | AUSE ×100 | Spearman | Gate AUROC |
+|---|---|---|---|---|---|---|---|---|
+| single | 22.63 ± 0.15 | 15.99 | 20.14 | **22.19** | 20.84 | 2.01 | **0.42** | – |
+| gated | 25.43 ± 0.03 | **21.79** | 19.45 | 17.91 | 26.25 | 2.03 | 0.15 | 0.54 |
+| v2 | **25.57 ± 0.16** | 21.65 | 19.82 | 18.37 | **26.41** | **1.80** | 0.24 | 0.64 / 0.57 |
+| v3 (v2 + ref dropout) | 25.01 ± 0.13 | 20.96 | **21.38 ± 0.49** | 19.87 ± 0.66 | 25.45 | 1.88 | 0.24 | 0.86 / 0.58 |
+
+**Findings**
+1. With reference dropout, a reference model beats the single-image model in changed regions
+   for the first time (+1.2 dB), and changed∩thick improves by 1.5 dB over v2.
+2. The cost is about 0.6 dB overall and 0.7 dB in thick smoke: the model trusts the
+   reference a little less everywhere.
+3. Changed∩thick is still about 2.3 dB below the single-image model. Caveat: this bin is tiny
+   (~3% changed × ~11% thick pixels across 9 test scenes). The single model scores higher there
+   than on thick smoke overall, which suggests the bin is noisy or biased by the synthetic
+   rectangles. Don't tune against it further.
+4. Gate quality varies a lot between seeds (AUROC 0.86 vs 0.58), as it did for v2 at
+   w_gate 0.2. The change head is not converging reliably in 630 training steps.
+
+**Decision:** stop tuning on procedural data. The test set (9 scenes) is too small and too
+artificial to separate these variants reliably. Carry v2 and v3 forward as the two candidates
+for the SmokeBench pilot, with more seeds and a larger test set.
+
+Reproduce: `configs/synthetic_{single,gated,gated_sup,gated_v2,gated_v3}.yaml` with `--seed 0/1`,
 then `scripts/evaluate.py` and `scripts/gate_diagnostics.py`.
 Note: `gated_sup` runs above used the earlier *unbalanced* gate loss; the loss is now balanced.

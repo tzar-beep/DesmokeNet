@@ -1,0 +1,25 @@
+# Pipeline check on procedural data. Not for paper results.
+data:
+  manifest: data/synthetic/manifest.csv
+  crop: 128
+  workers: 2
+  ref_dropout: 0.2
+model:
+  mode: gated
+  widths: [32, 64, 128, 192]
+  depth: 2
+  conf_from_gate: true
+  global_gate: true
+loss:
+  w_l1: 1.0
+  w_nll: 0.1
+  w_lpips: 0.0
+  w_gate: 0.05
+train:
+  out_dir: runs/synthetic_gated_v3
+  epochs: 30
+  batch_size: 8
+  lr: 0.0005
+  amp: true
+  val_every: 5
+  seed: 0

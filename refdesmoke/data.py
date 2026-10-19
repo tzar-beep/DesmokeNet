@@ -109,13 +109,16 @@ def make_stale_reference(gt, rng, donor=None, p_local=0.8, max_changes=3):
 
 
 class PairDataset(Dataset):
-    def __init__(self, manifest, split, crop=None, train=False, stale_ref=True, seed=0):
+    def __init__(self, manifest, split, crop=None, train=False, stale_ref=True, seed=0, ref_dropout=0.0):
+        """ref_dropout: training-only probability of replacing the reference with a frame from
+        another scene (change mask = everywhere), so the smoky-only path must work alone."""
         self.root = Path(manifest).parent
         with open(manifest, newline="") as f:
             self.rows = [r for r in csv.DictReader(f) if r["split"] == split]
         if not self.rows:
             raise ValueError(f"no rows with split={split!r} in {manifest}")
         self.crop, self.train, self.stale_ref, self.seed = crop, train, stale_ref, seed
+        self.ref_dropout = ref_dropout if train else 0.0
 
     def __len__(self):
         return len(self.rows)
@@ -142,6 +145,12 @@ class PairDataset(Dataset):
             ref, mask = make_stale_reference(gt, rng, donor)
         else:
             ref, mask = gt.copy(), np.zeros(gt.shape[:2], np.float32)
+
+        if self.ref_dropout and rng.random() < self.ref_dropout:
+            other = [r for r in self.rows if r.get("scene") != row.get("scene")] or self.rows
+            donor = load_rgb(self._path(other[rng.integers(len(other))]["gt"]))
+            ref = cv2.resize(donor, gt.shape[1::-1], interpolation=cv2.INTER_AREA)
+            mask = np.ones(gt.shape[:2], np.float32)
 
         arrs = [smoky, gt, ref, mask[..., None]]
         if self.crop:

@@ -42,7 +42,8 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "config.yaml").write_text(yaml.safe_dump(cfg))
 
-    train_ds = PairDataset(d["manifest"], d.get("train_split", "train"), crop=d["crop"], train=True)
+    train_ds = PairDataset(d["manifest"], d.get("train_split", "train"), crop=d["crop"], train=True,
+                           ref_dropout=d.get("ref_dropout", 0.0))
     val_ds = PairDataset(d["manifest"], d.get("val_split", "val"), train=False)
     train_dl = DataLoader(train_ds, batch_size=t["batch_size"], shuffle=True, drop_last=True,
                           num_workers=d.get("workers", 2), persistent_workers=d.get("workers", 2) > 0)
