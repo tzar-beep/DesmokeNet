@@ -77,6 +77,26 @@ def test_dcp_improves_synthetic_haze():
     assert np.abs(out - clean).mean() < np.abs(smoky - clean).mean()
 
 
+def test_gate_supervision_closes_gate_on_changes():
+    torch.manual_seed(0)
+    m = RefDesmoker("gated", widths=(16, 32), depth=1, conf_from_gate=True)
+    crit = Criterion(w_gate=1.0)
+    opt = torch.optim.Adam(m.parameters(), 3e-3)
+    gt = torch.rand(4, 3, 32, 32)
+    mask = torch.zeros(4, 1, 32, 32)
+    mask[..., :16, :] = 1
+    ref = gt.clone()
+    ref[..., :16, :] = torch.rand(4, 3, 16, 32)
+    batch = {"gt": gt, "smoky": 0.4 * gt + 0.5, "ref": ref, "change_mask": mask}
+    for _ in range(80):
+        loss, terms = crit(m(batch["smoky"], batch["ref"]), batch)
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+    g = m(batch["smoky"], batch["ref"])["gate"]
+    assert g[..., :16, :].mean() < g[..., 16:, :].mean() - 0.15
+
+
 def test_training_reduces_loss():
     torch.manual_seed(0)
     m = RefDesmoker("gated", widths=(16, 32), depth=1)

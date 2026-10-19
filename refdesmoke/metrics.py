@@ -89,7 +89,8 @@ class Evaluator:
 
     def __init__(self, unc_samples_per_image=20000, seed=0):
         self.per_image = []
-        self.bins = {k: {"sse": 0.0, "n": 0, "ssim": 0.0} for k in list(BINS) + ["changed", "unchanged"]}
+        self.bins = {k: {"sse": 0.0, "n": 0, "ssim": 0.0}
+                     for k in list(BINS) + ["changed", "unchanged", "changed_thick"]}
         self.err_s, self.unc_s = [], []
         self.k = unc_samples_per_image
         self.rng = np.random.default_rng(seed)
@@ -106,6 +107,7 @@ class Evaluator:
         vis, textured = visibility_map(sy, gy)
         masks = {k: ((vis >= lo) & (vis < hi)).float() * textured for k, (lo, hi) in BINS.items()}
         if change_mask is not None and change_mask.sum() > 0:
+            masks["changed_thick"] = change_mask * masks["thick"]  # hardest case: no valid info anywhere
             masks["changed"] = change_mask
             masks["unchanged"] = 1 - change_mask
         for k, m in masks.items():
@@ -138,7 +140,7 @@ class Evaluator:
         for k in BINS:
             if k in res["bins"]:
                 res["bins"][k]["pixel_frac"] /= max(total, 1)
-        for k in ("changed", "unchanged"):
+        for k in ("changed", "unchanged", "changed_thick"):
             res["bins"].get(k, {}).pop("pixel_frac", None)
         if self.err_s:
             res["uncertainty"] = sparsification_ause(np.concatenate(self.err_s), np.concatenate(self.unc_s))
@@ -147,7 +149,7 @@ class Evaluator:
 
 def format_table(results):
     """Markdown table: one row per method, columns = overall + bins."""
-    cols = ["thick", "medium", "thin", "changed"]
+    cols = ["thick", "medium", "thin", "changed", "changed_thick"]
     head = "| Method | PSNR | SSIM | " + " | ".join(f"{c} PSNR" for c in cols) + " | AUSE |"
     lines = [head, "|" + "---|" * (head.count("|") - 1)]
     for name, r in results.items():

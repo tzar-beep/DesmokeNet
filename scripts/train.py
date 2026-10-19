@@ -24,10 +24,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--epochs", type=int, help="override config")
+    ap.add_argument("--seed", type=int, help="override config")
+    ap.add_argument("--out-dir", help="override config")
     args = ap.parse_args()
     cfg = yaml.safe_load(open(args.config))
     if args.epochs:
         cfg["train"]["epochs"] = args.epochs
+    if args.seed is not None:
+        cfg["train"]["seed"] = args.seed
+    if args.out_dir:
+        cfg["train"]["out_dir"] = args.out_dir
     d, t = cfg["data"], cfg["train"]
 
     torch.manual_seed(t.get("seed", 0))
@@ -63,7 +69,8 @@ def main():
             b = {k: v.to(device) if torch.is_tensor(v) else v for k, v in b.items()}
             with torch.autocast(device, enabled=amp):
                 pred = method(b["smoky"], b["ref"])
-            pred = {k: v.float() if v is not None else None for k, v in pred.items()}
+            pred = {k: [g.float() for g in v] if isinstance(v, list) else (v.float() if v is not None else None)
+                    for k, v in pred.items()}
             loss, terms = crit(pred, b)
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
