@@ -1,0 +1,6 @@
+data/
+runs/
+results/
+__pycache__/
+*.pt
+.venv/

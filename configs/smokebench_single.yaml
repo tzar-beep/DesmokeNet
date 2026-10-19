@@ -1,0 +1,23 @@
+# Phase 0 go/no-go pilot on SmokeBench. Build the manifest first (see README).
+# The stale reference is synthesized from the GT during training and evaluation.
+data:
+  manifest: D:/data/smokebench/manifest.csv   # keep datasets outside OneDrive
+  crop: 128          # SmokeBench trains on 128x128 patches
+  workers: 4
+model:
+  mode: single
+  widths: [32, 64, 128, 192]
+  depth: 2
+loss:
+  w_l1: 1.0
+  w_nll: 0.1
+  w_lpips: 0.1
+train:
+  out_dir: runs/smokebench_single
+  epochs: 100
+  batch_size: 16
+  lr: 0.0005
+  amp: true
+  val_every: 5
+  val_max_items: 100
+  seed: 0
